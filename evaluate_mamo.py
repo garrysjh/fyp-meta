@@ -34,3 +34,11 @@ def evaluate_model(model, X_test, y_test):
     """Update evaluation metrics"""
     preds = model.predict(X_test)
     return accuracy_score(y_test, preds)
+
+# Fix: 2024-11-01 - 2/3
+from sklearn.metrics import accuracy_score, f1_score
+
+def evaluate_model(model, X_test, y_test):
+    """Update evaluation metrics"""
+    preds = model.predict(X_test)
+    return accuracy_score(y_test, preds)
