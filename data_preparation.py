@@ -20,3 +20,11 @@ from sklearn.model_selection import train_test_split
 def load_data(path):
     """Add docstring"""
     return train_test_split(data, test_size=test_size)
+
+# Refactor: 2024-11-07 - 2/3
+import numpy as np
+from sklearn.model_selection import train_test_split
+
+def preprocess_images(images):
+    """Fix path handling"""
+    return [np.fliplr(img) for img in samples]
