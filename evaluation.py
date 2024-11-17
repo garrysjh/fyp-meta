@@ -10,6 +10,16 @@ logging.basicConfig(level=logging.DEBUG)
 # Define a relevance threshold for binary ground truth
 RELEVANCE_THRESHOLD = 4.0
 
+def mse(pred_scores, ground_truth):
+    """Calculate Mean Squared Error (MSE) for predicted and ground truth ratings."""
+    pred_scores = np.array(pred_scores)
+    ground_truth = np.array(ground_truth)
+    return np.mean((pred_scores - ground_truth) ** 2)
+
+def rmse(pred_scores, ground_truth):
+    """Calculate Root Mean Squared Error (RMSE) for predicted and ground truth ratings."""
+    return np.sqrt(mse(pred_scores, ground_truth))
+
 def binary_relevance(ground_truth):
     """Convert ground truth ratings to binary relevance based on a threshold."""
     return (ground_truth >= RELEVANCE_THRESHOLD).astype(int)
@@ -62,6 +72,7 @@ def evaluate_model(model, dataset, k=10):
     logger.info("Starting model evaluation...")
 
     ndcg_scores, precision_scores, recall_scores = [], [], []
+    mse_scores, rmse_scores = [], []
     
     for task in dataset.create_meta_batch(len(dataset.valid_users)):
         query_x = task['query'][:, 0].long()
@@ -79,9 +90,16 @@ def evaluate_model(model, dataset, k=10):
             precision_score = precision_at_k(pred_scores, true_ratings, k)
             recall_score = recall_at_k(pred_scores, true_ratings, k)
             
+
+            # Calculate regression metrics
+            mse_score = mse(pred_scores, true_ratings)
+            rmse_score = rmse(pred_scores, true_ratings)
+            
             ndcg_scores.append(ndcg_score)
             precision_scores.append(precision_score)
             recall_scores.append(recall_score)
+            mse_scores.append(mse_score)
+            rmse_scores.append(rmse_score)
     
     end_time = time.time()
     logger.info(f"Model evaluation completed in {end_time - start_time:.2f} seconds")
@@ -94,7 +112,9 @@ def evaluate_model(model, dataset, k=10):
     results = {
         'NDCG@k': avg_ndcg,
         'Precision@k': avg_precision,
-        'Recall@k': avg_recall
+        'Recall@k': avg_recall,
+        'MSE': np.mean(mse_scores) if mse_scores else 0.0,
+        'RMSE': np.mean(rmse_scores) if rmse_scores else 0.0
     }
     print("Evaluation Results:", results)
     
