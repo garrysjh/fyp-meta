@@ -9,3 +9,5 @@ For running locally on your machine without change to the code, download and mov
 3. `python evaluation.py`
 
 in that order.
+
+Refer to the report for more details.
