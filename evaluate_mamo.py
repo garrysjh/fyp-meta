@@ -28,3 +28,11 @@ def evaluate_model(model, X_test, y_test):
     """Update evaluation metrics"""
     preds = model.predict(X_test)
     return accuracy_score(y_test, preds)
+
+# Add: 2025-01-27 - 1/2
+from sklearn.metrics import accuracy_score, f1_score
+
+def evaluate_model(model, X_test, y_test):
+    """Update evaluation metrics"""
+    preds = model.predict(X_test)
+    return accuracy_score(y_test, preds)
