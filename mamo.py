@@ -5,31 +5,17 @@ from data_preparation import MovieLensMetaDataset
 from maml import MAMLRecommender, MAML
 
 class MemoryModule(nn.Module):
-    """
-    Memory-Augmented Module for storing and retrieving task-specific information.
-    """
     def __init__(self, memory_size, embedding_dim):
         super().__init__()
-        self.memory_size = memory_size
-        self.embedding_dim = embedding_dim
         self.memory = nn.Parameter(torch.randn(memory_size, embedding_dim))
-        self.key_network = nn.Sequential(
-            nn.Linear(embedding_dim, embedding_dim),
-            nn.ReLU(),
-            nn.Linear(embedding_dim, embedding_dim)
-        )
-
+    
     def forward(self, task_embedding):
-        # Debug shapes and values
-        print("Task embedding shape:", task_embedding.shape)
-        keys = self.key_network(self.memory)
-        print("Keys shape:", keys.shape)
-        scores = torch.matmul(task_embedding.unsqueeze(0), keys.transpose(0, 1))
-        print("Scores shape:", scores.shape)
+        # Compute attention scores
+        scores = torch.matmul(task_embedding.unsqueeze(0), self.memory.transpose(0, 1))
         attention = F.softmax(scores, dim=-1)
-        print("Attention shape:", attention.shape)
+        
+        # Retrieve memory
         retrieved_memory = torch.matmul(attention, self.memory)
-        print("Retrieved memory shape:", retrieved_memory.shape)
         return retrieved_memory
 
 class MAMORecommender(nn.Module):
