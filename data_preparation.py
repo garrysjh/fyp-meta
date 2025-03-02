@@ -9,25 +9,21 @@ class MovieLensMetaDataset:
     def __init__(self, data_path, n_support=10, n_query=5):
         """
         Initialize MovieLens dataset for meta-learning
-        
-        Args:
-            data_path: Path to MovieLens ratings file
-            n_support: Number of samples per user for support set
-            n_query: Number of samples per user for query set
         """
         self.n_support = n_support
         self.n_query = n_query
         
         # Load and preprocess data
-        self.ratings_df = pd.read_csv(data_path, 
-                                    sep=',',
-                                    engine='python')
+        self.ratings_df = pd.read_csv(data_path, sep=',', engine='python')
+        
+        # Normalize ratings to [0, 1]
+        self.ratings_df['rating'] = self.ratings_df['rating'] / 5.0
         
         # Create user and item mappings
         self.user_id_map = {id: idx for idx, id in enumerate(self.ratings_df['userId'].unique())}
         self.movie_id_map = {id: idx for idx, id in enumerate(self.ratings_df['movieId'].unique())}
 
-        # Create n_itmes attribute (unique items[movies]) in dataset
+        # Create n_items attribute (unique items[movies]) in dataset
         self.n_items = len(self.movie_id_map)
         
         # Map IDs to indices
