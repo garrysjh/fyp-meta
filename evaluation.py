@@ -7,118 +7,102 @@ import time
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
-# Define a relevance threshold for binary ground truth
-RELEVANCE_THRESHOLD = 4.0
+RELEVANCE_THRESHOLD = 0.8  # Ratings above this are relevant
 
 def mse(pred_scores, ground_truth):
-    """Calculate Mean Squared Error (MSE) for predicted and ground truth ratings."""
-    pred_scores = np.array(pred_scores)
-    ground_truth = np.array(ground_truth)
+    pred_scores, ground_truth = np.array(pred_scores), np.array(ground_truth)
     return np.mean((pred_scores - ground_truth) ** 2)
 
 def rmse(pred_scores, ground_truth):
-    """Calculate Root Mean Squared Error (RMSE) for predicted and ground truth ratings."""
     return np.sqrt(mse(pred_scores, ground_truth))
 
 def binary_relevance(ground_truth):
-    """Convert ground truth ratings to binary relevance based on a threshold."""
-    return (ground_truth >= RELEVANCE_THRESHOLD).astype(int)
+    """Convert ratings to binary relevance."""
+    return (np.array(ground_truth) >= RELEVANCE_THRESHOLD).astype(int)
 
 def ndcg_at_k(pred_scores, ground_truth, k=10):
-    """Calculate NDCG@k for a single user's ranked list of items."""
-    if len(ground_truth) == 0:
-        return 0.0
-
+    """Compute NDCG@k correctly by considering ranking order."""
     ground_truth = binary_relevance(ground_truth)
+    if np.sum(ground_truth) == 0:
+        return 0.0  # No relevant items
+
     sorted_indices = np.argsort(-pred_scores)
-    ranked_items = ground_truth[sorted_indices[:k]]
+    valid_k = min(k, len(ground_truth))  # Ensure we don't index beyond available elements
+    ranked_relevance = ground_truth[sorted_indices[:valid_k]]
 
-    dcg = sum((ranked_items[i] / np.log2(i + 2)) for i in range(len(ranked_items)))
-    idcg = sum((1.0 / np.log2(i + 2)) for i in range(min(len(ground_truth), k)))
-
-    # Log values to inspect calculations
-    # print("DCG:", dcg, "IDCG:", idcg, "NDCG:", dcg / idcg if idcg > 0 else 0.0)
+    dcg = np.sum(ranked_relevance / np.log2(np.arange(2, len(ranked_relevance) + 2)))
+    ideal_ranking = sorted(ground_truth, reverse=True)[:valid_k]
+    idcg = np.sum(np.array(ideal_ranking) / np.log2(np.arange(2, len(ideal_ranking) + 2)))
     
     return dcg / idcg if idcg > 0 else 0.0
 
 def precision_at_k(pred_scores, ground_truth, k=10):
-    """Calculate Precision@k for a single user's ranked list of items."""
+    ground_truth = binary_relevance(ground_truth)
     if len(ground_truth) == 0:
         return 0.0
-
-    ground_truth = binary_relevance(ground_truth)
     sorted_indices = np.argsort(-pred_scores)
     ranked_items = ground_truth[sorted_indices[:k]]
     return np.sum(ranked_items) / k
 
 def recall_at_k(pred_scores, ground_truth, k=10):
-    """Calculate Recall@k for a single user's ranked list of items."""
-    if len(ground_truth) == 0:
-        return 0.0
-
     ground_truth = binary_relevance(ground_truth)
+    if np.sum(ground_truth) == 0:
+        return 0.0
     sorted_indices = np.argsort(-pred_scores)
     ranked_items = ground_truth[sorted_indices[:k]]
-    return np.sum(ranked_items) / np.sum(ground_truth) if np.sum(ground_truth) > 0 else 0.0
-
-def binary_relevance(ground_truth):
-    """Convert ground truth ratings to binary relevance based on a threshold."""
-    ground_truth = np.array(ground_truth)  # Ensure ground_truth is a numpy array
-    return (ground_truth >= RELEVANCE_THRESHOLD).astype(int)
+    return np.sum(ranked_items) / np.sum(ground_truth)
 
 def evaluate_model(model, dataset, k=10):
-    """Evaluate NDCG@k, Precision@k, and Recall@k for all users in the test set."""
+    """Evaluate metrics for all users."""
     start_time = time.time()
     logger.info("Starting model evaluation...")
 
     ndcg_scores, precision_scores, recall_scores = [], [], []
     mse_scores, rmse_scores = [], []
     
+    device = next(model.parameters()).device
     for task in dataset.create_meta_batch(len(dataset.valid_users)):
-        query_x = task['query'][:, 0].long()
-        query_y = task['query'][:, 1].float()  # Load as float for thresholding
+        query_x = task['query'][:, 0].long().to(device)
+        query_y = task['query'][:, 1].float().to(device)
 
         with torch.no_grad():
-            query_pred = model(query_x)
+            query_pred = model(query_x)  # Get raw model output
 
-        # Calculate metrics for this batch of users
-        for i in range(query_x.size(0)):
-            pred_scores = query_pred[i].cpu().numpy()
-            true_ratings = np.array([query_y[i].cpu().numpy()])  # Ensure this is a numpy array
+        if query_pred.ndim == 1:  # If model outputs a single score per query
+            query_pred = query_pred.unsqueeze(0)  # Convert to 2D tensor
 
-            ndcg_score = ndcg_at_k(pred_scores, true_ratings, k)
-            precision_score = precision_at_k(pred_scores, true_ratings, k)
-            recall_score = recall_at_k(pred_scores, true_ratings, k)
+        query_pred = query_pred.cpu().numpy()  # Convert to NumPy array
+        true_ratings = query_y.cpu().numpy()
+        print(f"Fixed Query Predictions Shape: {query_pred.shape}")
+        query_pred = query_pred.squeeze(0)  # Remove batch dimension if it's (1, num_items)
+
+        for i in range(min(len(query_x), len(query_pred))):  # Ensure valid indexing
+            pred_scores = query_pred[i]  # Extract score for this item
+            ground_truth = true_ratings  # Ensure it's an array with multiple values
+
+            if len(ground_truth) < k:  # Adjust k if needed
+                k = len(ground_truth)
+
+            print(f"Sample {i} - Ground Truth: {ground_truth}")
             
-
-            # Calculate regression metrics
-            mse_score = mse(pred_scores, true_ratings)
-            rmse_score = rmse(pred_scores, true_ratings)
-            
-            ndcg_scores.append(ndcg_score)
-            precision_scores.append(precision_score)
-            recall_scores.append(recall_score)
-            mse_scores.append(mse_score)
-            rmse_scores.append(rmse_score)
+            ndcg_scores.append(ndcg_at_k(pred_scores, ground_truth, k))
+            precision_scores.append(precision_at_k(pred_scores, ground_truth, k))
+            recall_scores.append(recall_at_k(pred_scores, ground_truth, k))
+            mse_scores.append(mse(pred_scores, ground_truth))
+            rmse_scores.append(rmse(pred_scores, ground_truth))
     
-    end_time = time.time()
-    logger.info(f"Model evaluation completed in {end_time - start_time:.2f} seconds")
-    
-    # Average scores across users
-    avg_ndcg = sum(ndcg_scores) / len(ndcg_scores) if ndcg_scores else 0.0
-    avg_precision = sum(precision_scores) / len(precision_scores) if precision_scores else 0.0
-    avg_recall = sum(recall_scores) / len(recall_scores) if recall_scores else 0.0
-
     results = {
-        'NDCG@k': avg_ndcg,
-        'Precision@k': avg_precision,
-        'Recall@k': avg_recall,
-        'MSE': np.mean(mse_scores) if mse_scores else 0.0,
-        'RMSE': np.mean(rmse_scores) if rmse_scores else 0.0
+        'NDCG@k': np.mean(ndcg_scores),
+        'Precision@k': np.mean(precision_scores),
+        'Recall@k': np.mean(recall_scores),
+        'MSE': np.mean(mse_scores),
+        'RMSE': np.mean(rmse_scores),
     }
-    print("Evaluation Results:", results)
     
+    logger.info(f"Model evaluation completed in {time.time() - start_time:.2f} seconds")
+    print("Evaluation Results:", results)
     return results
+
 
 def test_metrics():
     pred_scores = np.array([0.9, 0.8, 0.7, 0.6, 0.5])
