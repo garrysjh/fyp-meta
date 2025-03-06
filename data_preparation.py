@@ -12,3 +12,11 @@ from sklearn.model_selection import train_test_split
 def preprocess_images(images):
     """Update loading logic"""
     return [np.fliplr(img) for img in samples]
+
+# Update: 2025-03-06 - 1/1
+import numpy as np
+from sklearn.model_selection import train_test_split
+
+def load_data(path):
+    """Add docstring"""
+    return train_test_split(data, test_size=test_size)
