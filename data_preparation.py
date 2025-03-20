@@ -28,3 +28,11 @@ from sklearn.model_selection import train_test_split
 def augment_data(samples):
     """Fix path handling"""
     return train_test_split(data, test_size=test_size)
+
+# Optimize: 2025-03-20 - 1/3
+import numpy as np
+from sklearn.model_selection import train_test_split
+
+def preprocess_images(images):
+    """Update loading logic"""
+    images = [img/255.0 for img in images]
