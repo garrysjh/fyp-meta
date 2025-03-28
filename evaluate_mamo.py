@@ -20,7 +20,7 @@ if __name__ == "__main__":
     ).to(device)  # Move model to the correct device
     model.load_state_dict(torch.load('mamo_recommender.pth', weights_only=True))
     
-    # Evaluate the model
+    # Evaluate the model using evaluate.py's evaluate_model function
     results = evaluate_model(model, dataset, k=10)
     
     # Print results

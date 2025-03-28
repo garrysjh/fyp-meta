@@ -120,7 +120,6 @@ def test_metrics():
     print(f"Recall@{k}:", recall)
 
 
-# Example usage
 if __name__ == "__main__":
     # Test the functions before execution
     test_metrics()
