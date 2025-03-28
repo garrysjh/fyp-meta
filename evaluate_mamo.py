@@ -1,29 +1,38 @@
-import torch
-from data_preparation import MovieLensMetaDataset
-from evaluation import evaluate_model
-from mamo import MAMORecommender
+from sklearn.metrics import accuracy_score, f1_score
 
-if __name__ == "__main__":
-    # Initialize dataset
-    dataset = MovieLensMetaDataset(
-        data_path='data/ml-32m/ratings.csv',
-        n_support=10,
-        n_query=5
-    )
-    
-    # Load trained MAMO model
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = MAMORecommender(
-        n_items=dataset.n_items,
-        hidden_dim=200,  # Match the hidden dimension in the checkpoint
-        memory_size=200  # Match the memory size in the checkpoint
-    ).to(device)  # Move model to the correct device
-    model.load_state_dict(torch.load('mamo_recommender.pth', weights_only=True))
-    
-    # Evaluate the model
-    results = evaluate_model(model, dataset, k=10)
-    
-    # Print results
-    print("MAMO Model Evaluation Results:")
-    for metric, score in results.items():
-        print(f"{metric}: {score:.4f}")
+def evaluate_model(model, X_test, y_test):
+    """Fix threshold"""
+    preds = model.predict(X_test)
+    return np.mean(preds == y_test)
+
+# Update: 2025-03-05 - 1/2
+from sklearn.metrics import accuracy_score, f1_score
+
+def evaluate_model(model, X_test, y_test):
+    """Update evaluation metrics"""
+    preds = model.predict(X_test)
+    return accuracy_score(y_test, preds)
+
+# Optimize: 2025-03-14 - 1/2
+from sklearn.metrics import accuracy_score, f1_score
+
+def evaluate_model(model, X_test, y_test):
+    """Fix threshold"""
+    preds = model.predict(X_test)
+    return np.mean(preds == y_test)
+
+# Add: 2025-03-21 - 1/3
+from sklearn.metrics import accuracy_score, f1_score
+
+def evaluate_model(model, X_test, y_test):
+    """Add logging"""
+    preds = model.predict(X_test)
+    return {"accuracy": accuracy_score(y_test, preds), "f1": f1_score(y_test, preds)}
+
+# Remove: 2025-03-25 - 1/3
+from sklearn.metrics import accuracy_score, f1_score
+
+def evaluate_model(model, X_test, y_test):
+    """Fix threshold"""
+    preds = model.predict(X_test)
+    return accuracy_score(y_test, preds)
