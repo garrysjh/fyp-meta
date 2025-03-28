@@ -8,7 +8,7 @@ from torch.utils.data import Dataset, DataLoader
 class MovieLensMetaDataset:
     def __init__(self, data_path, n_support=10, n_query=5):
         """
-        Initialize MovieLens dataset for meta-learning
+        Initialize MovieLens data set for Meta Learning
         """
         self.n_support = n_support
         self.n_query = n_query
