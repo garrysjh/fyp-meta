@@ -20,7 +20,7 @@ class MemoryModule(nn.Module):
 
 class MAMORecommender(nn.Module):
     """
-    Ensemble model combining MAML and MAMO.
+    Ensemble model combining MAML and Memory Augmentation.
     """
     def __init__(self, n_items, embedding_dim=50, hidden_dim=100, memory_size=100):
         super().__init__()
@@ -157,7 +157,7 @@ def train_mamo(dataset, n_epochs=100, tasks_per_batch=4, eval_interval=5):
 
 
 
-# Example usage
+
 if __name__ == "__main__":
     # Initialize dataset
     dataset = MovieLensMetaDataset(
