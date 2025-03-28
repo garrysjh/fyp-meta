@@ -1,9 +1,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import numpy as np
 from data_preparation import MovieLensMetaDataset
-from copy import deepcopy
+
 
 class MAMLRecommender(nn.Module):
     def __init__(self, n_items, embedding_dim=50, hidden_dim=100):
@@ -128,7 +127,7 @@ def train_maml(dataset, n_epochs=50, tasks_per_batch=4, eval_interval=5):
     
     return model
 
-# Example usage
+
 def main():
     # Initialize dataset
     dataset = MovieLensMetaDataset(
@@ -147,7 +146,6 @@ def main():
     # Save trained model
     torch.save(model.state_dict(), 'maml_recommender.pth')
     
-    # Example prediction for a user
     test_user = dataset.valid_users[0]
     test_task = dataset.create_user_task(test_user)
     
@@ -156,10 +154,9 @@ def main():
     support_y = test_task['support'][:, 1].float().to(device)
     query_x = test_task['query'][:, 0].long().to(device)
     
-    # Create MAML instance for prediction
+
     maml = MAML(model)
     
-    # Adapt to test user
     adapted_params = maml.inner_loop(support_x, support_y)
     
     # Get predictions
