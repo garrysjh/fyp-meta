@@ -9,7 +9,9 @@ For running locally on your machine without change to the code, download and mov
 3. `python evaluation.py`
 
 `python data_preparation.py` is executed to clean and prepare data for experimentation.
+
 `python maml.py` generates a `maml_recommender.pth` which is serialized PyTorch state dictionary which contains weights, parameters of the MAML model (aka generated model)
+
 `python evaluation.py` executes the evaluation and prints the evaluation results to the console.
 
 To execute the MAMO experiment, download and move the ml-32m folder into /data/ directly and run
@@ -18,7 +20,9 @@ To execute the MAMO experiment, download and move the ml-32m folder into /data/ 
 3. `python evaluate_mamo.py`
 
 `python mamo.py` generates a `mamo_recommender.pth` which is serialized PyTorch state dictionary which contains weights, parameters of the MAMO model (aka generated model)
+
 `python evaluate_mamo.py` executes the evaluation and prints the evaluation results to the console.
+
 
 Evaluation results are given in NDCG@k, Precision@k, Recall@k, MSE, RMSE.
 
